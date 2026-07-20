@@ -1,0 +1,17 @@
+# Dependencies of the EC-number prediction pipeline.
+# Versions pinned to the clean_env environment.
+
+pandas==1.4.2
+numpy==1.22.3
+pyarrow==20.0.0
+matplotlib==3.7.0
+scikit-learn==1.2.0
+scipy==1.11.4
+
+# requests is needed only by the download scripts (3GFF, 4UNIPROT, KEGG);
+# version not pinned.
+requests
+
+# Optional — only for parsing the ProteInfer TFRecord in 7_EVALUATION.py.
+# tensorflow was not used in clean_env (the built-in manual protobuf parser is used).
+# tensorflow
