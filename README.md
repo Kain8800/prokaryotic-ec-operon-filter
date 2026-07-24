@@ -3,7 +3,7 @@
 # EC-number prediction for prokaryotic enzymes with operon-context verification
 
 A binary operon filter as post-processing for EC-number predictions from two
-deep-learning models — **ProteInfer** (Sanderson et al., 2023) and
+deep-learning models: **ProteInfer** (Sanderson et al., 2023) and
 **CLEAN** (Yu et al., 2023). Master's thesis.
 
 ## Overview
@@ -14,15 +14,15 @@ proposes a **verification filter based on operon context**. The operon context
 of a protein is the function of its operon neighbors: their EC numbers and the
 KEGG metabolic pathways they participate in. A predicted EC number is accepted if
 at least one of two conditions holds: it participates in a KEGG pathway shared
-with an operon neighbor, or it matches a neighbor's EC number. Proteins without
-operon context (no neighbors with a known function) are passed through unchanged
-— their prediction stays as is.
+with an operon neighbor, or it matches a neighbor's EC number. For proteins
+without operon context (no neighbors with a known function) the filter keeps the
+prediction as is.
 
 The filter relies on the functional homogeneity of operons: in the vast majority
 of operons, neighboring genes participate in shared KEGG metabolic pathways.
 
 Evaluation is stratified by homology to the training set (HIGH > 70%,
-MEDIUM 40–70%, LOW < 40%, NONE — no match). The stratum boundaries reflect how
+MEDIUM 40–70%, LOW < 40%, NONE: no match). The stratum boundaries reflect how
 much a prediction can rely on the similarity of the evaluation protein to the
 training data: above 40% identity to the nearest training protein the EC number
 (first three digits) is already determined by similarity (Tian & Skolnick, 2003),
@@ -56,12 +56,11 @@ the test protein's homology to the training data:
 | LOW | 0.7369 | **0.8608** | **+0.1239** | 0.375 → 0.276 |
 | ALL | 0.8073 | 0.8870 | +0.0797 | 0.879 → 0.716 |
 
-Key observation: among predictions that pass the confidence threshold τ = 0.90,
-the error rate is 3.3%, and the operon filter rejects 56.9% of them. Detection
-effectiveness grows with the error rate — from 60.3% on the HIGH stratum to
-**88.0% on LOW**. That is, the filter is most useful exactly where the model is
-most prone to error, which means it carries a signal independent of model
-confidence.
+Among predictions that pass the confidence threshold τ = 0.90, the error rate is
+3.3%, and the operon filter rejects 56.9% of these errors. Detection
+effectiveness grows with the error rate: from 60.3% on the HIGH stratum to
+**88.0% on LOW**. The filter is most useful where the model is most prone to
+error, so it carries a signal independent of model confidence.
 
 Detailed metrics by EC-hierarchy level and enzyme class are in the thesis
 (`KARMANOV_VR_01061.pdf`) and in the plots under `docs/`.
@@ -99,15 +98,15 @@ Sweep result for ProteInfer:
 | 0.99 | 0.8132 | 0.8862 | 0.869 | 0.709 |
 | 0.995 | 0.8170 | 0.8843 | 0.866 | 0.707 |
 
-**τ = 0.90** is selected. Crucially, this is an interior maximum, not an edge of
-the grid: at every stricter threshold the post-filter F1 is lower.
+**τ = 0.90** is selected. This is an interior maximum of the grid: at every
+stricter threshold the post-filter F1 is lower.
 
 The no-filter optimum and the with-filter optimum do not coincide, so comparing at
 a single operating point understates the no-filter result. Comparing each
-configuration fairly at its own optimum — no filter gives 0.8170 at τ = 0.995,
-with filter 0.8870 at τ = 0.90 — the gain is **+0.0700**, versus +0.0797 when
-compared at a single point. The value remains an upper bound: the no-filter F1 has
-not plateaued and keeps rising at the edge of the grid.
+configuration at its own optimum (0.8170 without the filter at τ = 0.995, 0.8870
+with it at τ = 0.90) gives a gain of **+0.0700**, versus +0.0797 at a single
+operating point. The value remains an upper bound: the no-filter F1 has not
+plateaued and keeps rising at the edge of the grid.
 
 ## Why the filter is not equivalent to a stricter threshold
 
@@ -115,14 +114,14 @@ A natural objection: the operon filter rejects predictions just like raising the
 threshold, so its effect reduces to a stricter τ. The data refute this.
 
 **ProteInfer's confidence distribution is degenerate.** The median top-1
-confidence is **1.0000** — more than half of the predictions are pinned to the
+confidence is 1.0000, so more than half of the predictions are pinned to the
 sigmoid ceiling. As a result, the threshold barely controls coverage: at τ = 0.90,
 93.05% of predictions pass; at τ = 0.999, 91.06%. Raising the threshold by nine
 hundredths cuts off 2 pp. In terms of the evaluation set, the no-filter model's
-coverage cannot be pushed below **≈ 0.86** by the threshold — that is its floor.
+coverage has a floor of ≈ 0.86: the threshold cannot push it lower.
 
-**The regions do not overlap.** The operon filter operates at coverage 0.716 — 15
-pp below the floor reachable by the threshold. At no τ does the no-filter model
+**The regions do not overlap.** The operon filter operates at coverage 0.716,
+15 pp below the floor reachable by the threshold. At no τ does the no-filter model
 enter this region. The filter rejects on a feature independent of model confidence
 (the numeric score that τ acts on), and therefore works where confidence no longer
 distinguishes anything.
@@ -142,7 +141,7 @@ where F1 rises by rejecting predictions. This shows up clearly on CLEAN.
 | ProteInfer | 0.90 | 0.8870 | **0.716** |
 | CLEAN | 0.995 | **0.9019** | 0.261 |
 
-Formally CLEAN wins on F1 (+0.0149) — in fact at the cost of dropping three
+Formally CLEAN wins on F1 (+0.0149), but at the cost of dropping three
 quarters of the proteins. When sweeping only up to 0.95 this effect did not
 appear: the grid's upper bound acted as an implicit coverage constraint.
 
@@ -158,27 +157,27 @@ everywhere:
 | ~0.704 | 0.8719 | **0.8870** |
 
 CLEAN beats ProteInfer on F1 only at coverage ≤ 0.487, which ProteInfer does not
-reach. The limiting case is telling: at τ = 0.995 the models' no-filter F1 are
-almost equal (0.8170 vs 0.8172), but ProteInfer keeps coverage 0.866 against
-CLEAN's 0.340 — the same quality at 2.5× the reach.
+reach. At the limiting threshold τ = 0.995 the models' no-filter F1 are almost
+equal (0.8170 vs 0.8172), but ProteInfer keeps coverage 0.866 against CLEAN's
+0.340: the same quality at 2.5× the reach.
 
 ## Data sources
 
 The data itself is not stored in the repository (excluded via `.gitignore`); the
 scripts expect it in the working directory. Data retrieved on 2026-06-16.
 
-- **ODB (OperonDB)** — conserved operons: <https://operondb.jp/conserved>.
+- Conserved operons from ODB (OperonDB): <https://operondb.jp/conserved>.
   Processing: `preprocessing/1OPERON_RS.py` (input `conserved_operon.download.txt`).
-- **NCBI RefSeq** — assembly summaries and GFF annotations:
+- Assembly summaries and GFF annotations from NCBI RefSeq:
   - <https://ftp.ncbi.nlm.nih.gov/genomes/refseq/bacteria/assembly_summary.txt>
   - <https://ftp.ncbi.nlm.nih.gov/genomes/refseq/archaea/assembly_summary.txt>
 
   Processing: `preprocessing/2PARS_REFSEQ_PROK.py`, `preprocessing/3GFF_PARSER.py`.
-- **UniProtKB** — sequences and EC numbers via the REST API:
+- Sequences and EC numbers from UniProtKB via the REST API:
   <https://rest.uniprot.org/uniprotkb/stream> (fields `accession, organism_id,
   gene_names, xref_refseq, ec, sequence`). Scripts
   `preprocessing/4UNIPROT_DOWNLOAD.py`, `preprocessing/5UNIPROT_FILTER.py`.
-- **KEGG** — EC ↔ metabolic-pathway mapping:
+- EC ↔ metabolic-pathway mapping from KEGG:
   <https://rest.kegg.jp/link/ec/pathway>. The script
   `preprocessing/KEGG_PATHWAY_EC_DOWNLOAD.py` builds `pathid_ec.tsv`; this file is
   small and is stored in the repository (`preprocessing/pathid_ec.tsv`). KEGG
@@ -200,20 +199,21 @@ between steps is Apache Parquet; external dumps are TSV.
 | 6 | `preprocessing/6MERGE_FINAL.py` | Merge operons + RefSeq mapping + UniProt; drop operons with < 2 proteins. | `merged_operon_uniprot_refseq_filtered.parquet` |
 | 7 | `7_EVALUATION.py` | Build the evaluation set, stratify by homology (MMseqs2), evaluate ProteInfer and CLEAN, apply the operon filter, select the threshold, produce plots and metrics. | tables and plots in `evaluation2/results1/` |
 
-The shared code of step 7 — building the evaluation set, stratification, the
-operon filter and metrics — lives in `eval_common.py`. A separate utility
+The shared code of step 7 (building the evaluation set, stratification, the
+operon filter and metrics) lives in `eval_common.py`. A separate utility
 `preprocessing/KEGG_PATHWAY_EC_DOWNLOAD.py` fetches all "pathway ↔ EC" pairs with a
 single request to KEGG REST `link/ec/pathway`, normalizes the map-variant prefix to
 `rn` (the five-digit number is the same for map/ko/ec/rn) and stores them as
 `pathid_ec.tsv` with columns `Path` and `EC_Numbers`; run it on a machine with
 internet access.
 
-`7_EVALUATION.py` additionally uses the model predictions — ProteInfer
-(`proteinfer_predictions2.tsv`, 22 MB) and CLEAN (`query_maxsep.csv`, 3 MB) —
-which **are included in the repository**. Their training sets (the ProteInfer
-TFRecord and CLEAN's `split100.csv`) are needed for strict leakage exclusion by
-sequence match; they are not in the repository because of their size, but they are
-publicly available from the model authors and go into the repository root:
+`7_EVALUATION.py` additionally uses the model predictions, which
+**are included in the repository**: ProteInfer (`proteinfer_predictions2.tsv`,
+22 MB) and CLEAN (`query_maxsep.csv`, 3 MB). The models' training sets (the
+ProteInfer TFRecord and CLEAN's `split100.csv`) are needed for strict leakage
+exclusion by sequence match; they are not in the repository because of their size,
+but they are publicly available from the model authors and go into the repository
+root:
 
 ```bash
 # ProteInfer: SwissProt (clustered) training set.
@@ -229,6 +229,43 @@ wget -O split100.csv \
 ```
 
 The `-O` flag sets the exact filename that `eval_common.py` expects.
+
+## Repository structure
+
+```
+.
+├── eval_common.py                       shared code of step 7
+├── 7_EVALUATION.py                      filter evaluation, threshold selection, plots
+├── preprocessing/
+│   ├── 0PATHID_PREPROCESS.py
+│   ├── 1OPERON_RS.py
+│   ├── 2PARS_REFSEQ_PROK.py
+│   ├── 3GFF_PARSER.py
+│   ├── 4UNIPROT_DOWNLOAD.py
+│   ├── 5UNIPROT_FILTER.py
+│   ├── 6MERGE_FINAL.py
+│   ├── KEGG_PATHWAY_EC_DOWNLOAD.py
+│   └── pathid_ec.tsv
+├── docs/                                run plots (for the README)
+│   ├── sec21_baselines.png
+│   ├── sec21_pareto.png
+│   ├── sec22_binary_delta_f1.png
+│   ├── sec22_f1_by_ec_level.png
+│   ├── sec22_ec_class_heatmap.png
+│   └── sec24_high_conf_errors.png
+├── KARMANOV_VR_01061.pdf
+├── requirements.txt
+├── SETUP_ENV.md
+├── SETUP_ENV.ru.md
+├── .gitignore
+├── LICENSE
+├── README.md
+└── README.ru.md
+```
+
+The `docs/` directory holds the committed run plots that the README links to. On
+each run the script writes its own plots to `evaluation2/results1/`, so a new run's
+results do not overwrite the reference ones.
 
 ## Environment
 
@@ -275,78 +312,41 @@ The MMseqs2 stratification is cached: if `evaluation2/mmseqs_work/result.tsv`
 exists and is non-empty, the search is not rerun. When the input data changes, the
 cache must be deleted manually.
 
-## Repository structure
-
-```
-.
-├── eval_common.py                       shared code of step 7
-├── 7_EVALUATION.py                      filter evaluation, threshold selection, plots
-├── preprocessing/
-│   ├── 0PATHID_PREPROCESS.py
-│   ├── 1OPERON_RS.py
-│   ├── 2PARS_REFSEQ_PROK.py
-│   ├── 3GFF_PARSER.py
-│   ├── 4UNIPROT_DOWNLOAD.py
-│   ├── 5UNIPROT_FILTER.py
-│   ├── 6MERGE_FINAL.py
-│   ├── KEGG_PATHWAY_EC_DOWNLOAD.py
-│   └── pathid_ec.tsv
-├── docs/                                run plots (for the README)
-│   ├── sec21_baselines.png
-│   ├── sec21_pareto.png
-│   ├── sec22_binary_delta_f1.png
-│   ├── sec22_f1_by_ec_level.png
-│   ├── sec22_ec_class_heatmap.png
-│   └── sec24_high_conf_errors.png
-├── KARMANOV_VR_01061.pdf
-├── requirements.txt
-├── SETUP_ENV.md
-├── SETUP_ENV.ru.md
-├── .gitignore
-├── LICENSE
-├── README.md
-└── README.ru.md
-```
-
-The `docs/` directory holds the committed run plots that the README links to. On
-each run the script writes its own plots to `evaluation2/results1/`, so a new run's
-results do not overwrite the reference ones.
-
 ## Work done after the defense
 
 The thesis captured the state at the time of the defense. When preparing the
 repository the pipeline was rerun, and all results reproduced exactly. Beyond the
-defended work, the following was added.
+defended work, the following was added:
 
-**The threshold grid was extended from eight values to twelve** (0.97, 0.98, 0.99,
-0.995 added; the upper bound is set by CLEAN's score ceiling of 0.9989). In the
-thesis the sweep stopped at 0.95, so τ = 0.90 was a maximum only within the scanned
-range. The extension showed this is a true interior maximum: at every stricter
-threshold the post-filter F1 is lower. All ProteInfer conclusions held unchanged.
-
-**ProteInfer's confidence distribution was analyzed.** The median top-1 prediction
-equals 1.0000, and the no-filter model's coverage cannot be pushed below ≈ 0.86 by
-the threshold. It follows that the operon filter, operating at coverage 0.716,
-rejects on a feature unreachable by the confidence threshold — i.e. it does not
-reduce to a stricter τ.
-
-**A limitation of the threshold-selection criterion was found** (see the section
-above): maximum macro-F1 without a coverage constraint degenerates on a wide grid.
-In the thesis the effect did not appear because the upper bound 0.95 acted as an
-implicit coverage constraint. The script was updated to print coverage next to F1
-and not to declare a winner by a single metric.
-
-**Output cross-checked against the text.** The values in the "F1 no filter" column
-of Table 4 at τ = 0.00 and τ = 0.95 (0.6383 and 0.8052) diverged from the script
-output (0.6366 and 0.8099) — transcription typos in the table; Figure 4 is built by
-the same script from the same sweep and shows the correct values. The other columns
-of Table 4, as well as Tables 5–8, matched fully.
+- The threshold grid was extended from eight values to twelve (0.97, 0.98, 0.99,
+  0.995 added; the upper bound is set by CLEAN's score ceiling of 0.9989). In the
+  thesis the sweep stopped at 0.95, so τ = 0.90 was a maximum only within the
+  scanned range. The extension showed this is a true interior maximum: at every
+  stricter threshold the post-filter F1 is lower. All ProteInfer conclusions held
+  unchanged.
+- ProteInfer's confidence distribution was analyzed. The median top-1 prediction
+  equals 1.0000, and the no-filter model's coverage cannot be pushed below ≈ 0.86
+  by the threshold. It follows that the operon filter, operating at coverage
+  0.716, rejects on a feature unreachable by the confidence threshold, i.e. it
+  does not reduce to a stricter τ.
+- A limitation of the threshold-selection criterion was found (see the section
+  above): maximum macro-F1 without a coverage constraint degenerates on a wide
+  grid. In the thesis the effect did not appear because the upper bound 0.95
+  acted as an implicit coverage constraint. The script was updated to print
+  coverage next to F1 and not to declare a winner by a single metric.
+- The script output was cross-checked against the thesis text. The values in the
+  "F1 no filter" column of Table 4 at τ = 0.00 and τ = 0.95 (0.6383 and 0.8052)
+  diverged from the script output (0.6366 and 0.8099). These are transcription
+  typos in the table: Figure 4 is built by the same script from the same sweep
+  and shows the correct values. The other columns of Table 4, as well as
+  Tables 5–8, matched fully.
 
 ## Thesis
 
-`KARMANOV_VR_01061.pdf` — the full text of the work (in Russian, GOST-formatted),
-including the methodology, per-stratum metric tables and the bibliography.
+`KARMANOV_VR_01061.pdf` is the full text of the thesis (in Russian,
+GOST-formatted), including the methodology, per-stratum metric tables and the
+bibliography.
 
 ## License
 
-MIT.
+MIT, see [LICENSE](LICENSE).
